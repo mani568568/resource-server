@@ -1,0 +1,94 @@
+In order to add security to our Spring Boot application, we need to add the security starter dependency:
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+This will include the SecurityAutoConfiguration class – containing the initial/default security configuration.
+
+Notice how we didn't specify the version here, with the assumption that the project is already using Boot as the parent.
+
+Simply put, by default, the Authentication gets enabled for the Application.
+Also, content negotiation is used to determine if basic or formLogin should be used.
+
+There are some predefined properties, such as:
+=============================================
+spring.security.user.name
+spring.security.user.password
+
+If we don't configure the password using the predefined property spring.security.user.password and start the application,
+we'll notice that a default password is randomly generated and printed in the console log:
+Using default security password: c8be15de-4488-4490-9dc6-fab3f91435c6
+
+Disabling the Auto-Configuration:
+=================================
+To discard the security auto-configuration and add our own configuration,
+we need to exclude the SecurityAutoConfiguration class.
+This can be done via a simple exclusion:
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
+Or by adding some configuration into the application.properties file:
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+
+Disabling vs. Surpassing Security Auto-Configuration
+===================================================
+There's a significant difference between disabling auto configuration and surpassing it.
+
+By disabling it, it's just like adding the Spring Security dependency and the whole setup from scratch. This can be useful in several cases:
+
+Integrating application security with a custom security provider:
+==================================================================
+Migrating a legacy Spring application with already existing security setup – to Spring Boot
+But, most of the time we won't need to fully disable the security auto-configuration.
+
+The way Spring Boot is configured permits surpassing the auto configured security by adding in our new/custom configuration classes.
+This is typically easier, as we're just customizing an existing security setup to fulfill our needs.
+
+
+****************************************************************************
+
+<dependency>
+   <groupId>org.springframework.security.oauth</groupId>
+   <artifactId>spring-security-oauth2</artifactId>
+</dependency>
+This dependency includes a set of classes that are capable of triggering the
+auto-configuration mechanism defined in OAuth2AutoConfiguration class.
+
+****************************************************************************
+
+To include support for a resource server, we need to add this dependency:
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+</dependency>
+
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
+
+@Configuration
+@EnableResourceServer
+public class OAuth2ResourceServer extends ResourceServerConfigurerAdapter
+{
+    @Override
+    public void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+            .antMatchers("/api/**").authenticated()
+            .antMatchers("/").permitAll();
+    }
+}
+Above config enable protection on all endpoints starting /api.
+All other endpoints can be accessed freely.
+The resource server also provides a mechanism to authenticate users themselves.
+It will be a form-based login in most cases.
+
+OAuth 2.0 Resource Server
+=========================
+Spring Security supports protecting endpoints using two forms of OAuth 2.0 Bearer Tokens:
+
+JWT
+Opaque Tokens

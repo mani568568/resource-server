@@ -1,0 +1,54 @@
+JWT:
+====
+
+
+Most Resource Server support is collected into spring-security-oauth2-resource-server.
+However, the support for decoding and verifying JWTs is in spring-security-oauth2-jose
+meaning that both are necessary in order to have a working resource server that supports JWT-encoded Bearer Tokens.
+
+=================================================================================
+
+When using Spring Boot, configuring an application as a resource server consists of two basic steps.
+
+1)First, include the needed dependencies and
+2)second, indicate the location of the authorization server.
+
+Specifying the Authorization Server
+In a Spring Boot application, to specify which authorization server to use, simply do:
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://idp.example.com/issuer
+
+Startup Expectations
+====================
+When this property and these dependencies are used,
+Resource Server will automatically configure itself to validate JWT-encoded Bearer Tokens.
+
+It achieves this through a deterministic startup process:
+=========================================================
+Hit the Provider Configuration or Authorization Server Metadata endpoint, processing the response for the jwks_url property
+Configure the validation strategy to query jwks_url for valid public keys
+Configure the validation strategy to validate each JWTs iss claim against https://idp.example.com.
+A consequence of this process is that the authorization server must be up and receiving requests in order for Resource Server to successfully start up.
+
+[Note]:
+=======
+If the authorization server is down when Resource Server queries it (given appropriate timeouts), then startup will fail.
+
+Runtime Expectations
+====================
+Once the application is started up, Resource Server will attempt to process any request containing an Authorization: Bearer header:
+
+GET / HTTP/1.1
+Authorization: Bearer some-token-value # Resource Server will process this
+So long as this scheme is indicated, Resource Server will attempt to process the request according to the Bearer Token specification.
+
+Given a well-formed JWT, Resource Server will:
+==============================================
+Validate its signature against a public key obtained from the jwks_url endpoint during startup and matched against the JWT
+Validate the JWT’s exp and nbf timestamps and the JWT’s iss claim, and
+Map each scope to an authority with the prefix SCOPE_.
